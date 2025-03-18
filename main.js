@@ -22,13 +22,42 @@ controls.maxDistance = 20; // Maximum zoom distance
 // Create a particle system for flowing thoughts
 const particleCount = 1000;
 const particles = new THREE.BufferGeometry();
+
+// Create a circular, soft-edged particle texture
+const particleCanvas = document.createElement("canvas");
+particleCanvas.width = 64;
+particleCanvas.height = 64;
+const particleContext = particleCanvas.getContext("2d");
+
+// Create circular gradient for soft particles
+const particleGradient = particleContext.createRadialGradient(
+  32,
+  32,
+  0,
+  32,
+  32,
+  32
+);
+particleGradient.addColorStop(0, "rgba(255, 255, 255, 0.8)");
+particleGradient.addColorStop(0.3, "rgba(255, 255, 255, 0.6)");
+particleGradient.addColorStop(0.7, "rgba(255, 255, 255, 0.2)");
+particleGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+particleContext.fillStyle = particleGradient;
+particleContext.fillRect(0, 0, 64, 64);
+
+const particleTexture = new THREE.Texture(particleCanvas);
+particleTexture.needsUpdate = true;
+
 const particleMaterial = new THREE.PointsMaterial({
   color: 0xcccccc, // Light gray particles
-  size: 0.05,
+  size: 0.1,
   transparent: true,
-  opacity: 0.5,
+  opacity: 0.6,
   blending: THREE.AdditiveBlending,
   sizeAttenuation: true,
+  map: particleTexture,
+  depthWrite: false,
 });
 
 // Create particle positions
@@ -373,76 +402,97 @@ function setupAudio() {
       type: "sine",
     },
     envelope: {
-      attack: 0.1,
-      decay: 0.3,
+      attack: 0.3,
+      decay: 0.5,
       sustain: 0.4,
-      release: 2.0,
+      release: 3.0,
     },
   }).connect(audioAnalyzer);
 
   // Create enhanced reverb for more spacious ambience
   const reverb = new Tone.Reverb({
-    decay: 8.0, // Longer decay
-    wet: 0.7, // More wet signal
-    preDelay: 0.2, // Add preDelay for spaciousness
+    decay: 10.0, // Longer decay for more spaciousness
+    wet: 0.8, // More wet signal
+    preDelay: 0.3, // Add more preDelay for spaciousness
   }).connect(masterGain);
 
   // Add delay for ethereal quality
   const delay = new Tone.FeedbackDelay({
-    delayTime: "8n",
-    feedback: 0.4,
-    wet: 0.4,
+    delayTime: "8n.",
+    feedback: 0.5,
+    wet: 0.5,
   }).connect(reverb);
 
-  // Add filter for softer tone
+  // Add filter for warmer tone
   const filter = new Tone.Filter({
     type: "lowpass",
-    frequency: 2000,
-    Q: 1,
+    frequency: 1800,
+    Q: 0.8,
   }).connect(delay);
 
-  // Create a more serene ambient synth
+  // Create a gentle ambient synth
   const ambient = new Tone.PolySynth(Tone.FMSynth, {
-    harmonicity: 1.5,
-    modulationIndex: 3.5,
+    harmonicity: 1.2,
+    modulationIndex: 2.5,
     oscillator: {
       type: "triangle",
     },
     envelope: {
-      attack: 2.0, // Very slow attack
-      decay: 1.0,
+      attack: 3.0, // Very slow attack for gentle notes
+      decay: 2.0,
       sustain: 0.8,
-      release: 8.0, // Long release for sustained sounds
+      release: 10.0, // Longer release for sustained sounds
     },
     modulation: {
       type: "sine",
     },
     modulationEnvelope: {
-      attack: 1.0,
-      decay: 0.5,
+      attack: 2.0,
+      decay: 1.0,
       sustain: 0.5,
-      release: 3.0,
+      release: 5.0,
     },
   })
     .connect(filter)
     .connect(audioAnalyzer);
 
-  // Pentatonic scale for more harmonic coherence
-  const pentatonicScale = ["A2", "C3", "D3", "E3", "G3", "A3", "C4", "E4"];
+  // Create a subtle drone synth for background texture
+  const drone = new Tone.Synth({
+    oscillator: {
+      type: "sine",
+    },
+    envelope: {
+      attack: 5.0,
+      decay: 3.0,
+      sustain: 1.0,
+      release: 8.0,
+    },
+  }).connect(filter);
 
-  // Play ambient notes with more thoughtful timing
+  // Japanese-inspired pentatonic scale (Hirajōshi scale variation)
+  const zenScale = ["D2", "E2", "G2", "A2", "D3", "E3", "G3", "A3", "D4"];
+
+  // Play ambient notes with thoughtful timing
   const ambientPart = new Tone.Pattern(
     (time, note) => {
-      // Randomize velocity for more natural feeling
-      const velocity = 0.1 + Math.random() * 0.2;
-      ambient.triggerAttackRelease(note, "2n", time, velocity);
+      // Randomize velocity for more natural feeling (gentler overall)
+      const velocity = 0.05 + Math.random() * 0.15;
+      ambient.triggerAttackRelease(note, "4n", time, velocity);
     },
-    pentatonicScale,
+    zenScale,
     "randomWalk"
   );
 
-  // Slow down the tempo for more serene feeling
-  Tone.Transport.bpm.value = 30;
+  // Add occasional drone notes
+  const dronePart = new Tone.Loop(() => {
+    if (Math.random() > 0.6) {
+      // Play root note occasionally
+      drone.triggerAttackRelease(zenScale[0], "8m", undefined, 0.1);
+    }
+  }, "4m");
+
+  // Slow down the tempo significantly for more meditative feeling
+  Tone.Transport.bpm.value = 20;
 
   // Note: We don't start Transport until user interaction
   // Tone.Transport.start();
@@ -451,15 +501,16 @@ function setupAudio() {
   // Play a gentler note when a new line appears
   window.playLineSound = function () {
     if (!isMuted && audioInitialized) {
-      // Use pentatonic notes for the line notification as well
-      const noteIndex = Math.floor(Math.random() * pentatonicScale.length);
-      const randomNote = pentatonicScale[noteIndex];
-      synth.triggerAttackRelease(randomNote, "8n", undefined, 0.2);
+      // Use our zen scale for the line notification
+      const noteIndex = Math.floor(Math.random() * zenScale.length);
+      const randomNote = zenScale[noteIndex];
+      synth.triggerAttackRelease(randomNote, "8n", undefined, 0.15);
     }
   };
 
-  // Store the ambient part for later use
+  // Store the parts for later use
   window.ambientPart = ambientPart;
+  window.dronePart = dronePart;
 
   // Mark audio as initialized
   audioInitialized = true;
@@ -588,6 +639,9 @@ document.addEventListener("DOMContentLoaded", () => {
           if (window.ambientPart) {
             window.ambientPart.start();
           }
+          if (window.dronePart) {
+            window.dronePart.start();
+          }
 
           // Fade in gradually over 1 second
           masterGain.gain.rampTo(1, 1);
@@ -597,6 +651,9 @@ document.addEventListener("DOMContentLoaded", () => {
           Tone.Transport.start();
           if (window.ambientPart) {
             window.ambientPart.start();
+          }
+          if (window.dronePart) {
+            window.dronePart.start();
           }
         }
       } catch (err) {
