@@ -53,7 +53,7 @@ const particleMaterial = new THREE.PointsMaterial({
   color: 0xcccccc, // Light gray particles
   size: 0.1,
   transparent: true,
-  opacity: 0.6,
+  opacity: 0.5,
   blending: THREE.AdditiveBlending,
   sizeAttenuation: true,
   map: particleTexture,
@@ -402,10 +402,10 @@ function setupAudio() {
       type: "sine",
     },
     envelope: {
-      attack: 0.2,
-      decay: 0.5,
+      attack: 0.1,
+      decay: 0.3,
       sustain: 0.4,
-      release: 3.0,
+      release: 2.0,
     },
   }).connect(audioAnalyzer);
 
@@ -413,7 +413,7 @@ function setupAudio() {
   const reverb = new Tone.Reverb({
     decay: 10.0, // Longer decay for more spaciousness
     wet: 0.8, // More wet signal
-    preDelay: 0.3, // Add more preDelay for spaciousness
+    preDelay: 0.3, // Increased preDelay for more space
   }).connect(masterGain);
 
   // Add delay for ethereal quality
@@ -423,59 +423,46 @@ function setupAudio() {
     wet: 0.5,
   }).connect(reverb);
 
-  // Add filter for warmer tone
+  // Add filter for softer tone
   const filter = new Tone.Filter({
     type: "lowpass",
-    frequency: 1800,
-    Q: 0.8,
+    frequency: 1500, // Lower frequency for gentler tone
+    Q: 0.5, // Softer resonance
   }).connect(delay);
 
-  // Create a gentle ambient synth
+  // Create a more serene ambient synth
   const ambient = new Tone.PolySynth(Tone.FMSynth, {
-    harmonicity: 1.2,
-    modulationIndex: 2.5,
+    harmonicity: 1.2, // Lower harmonicity for less tension
+    modulationIndex: 2.0, // Lower modulation for softer sound
     oscillator: {
-      type: "triangle",
+      type: "sine", // Pure sine wave
     },
     envelope: {
-      attack: 3.0, // Very slow attack for gentle notes
-      decay: 2.0,
+      attack: 3.0, // Longer attack for gentler onset
+      decay: 2.0, // Longer decay
       sustain: 0.8,
-      release: 10.0, // Longer release for sustained sounds
+      release: 10.0, // Longer release for sustained resonance
     },
     modulation: {
-      type: "sine",
+      type: "triangle", // Less complex modulation
     },
     modulationEnvelope: {
-      attack: 2.0,
+      attack: 2.0, // Softer modulation attack
       decay: 1.0,
-      sustain: 0.5,
-      release: 5.0,
+      sustain: 0.4,
+      release: 5.0, // Extended release
     },
   })
     .connect(filter)
     .connect(audioAnalyzer);
 
-  // Create a subtle drone synth for background texture
-  const drone = new Tone.Synth({
-    oscillator: {
-      type: "sine",
-    },
-    envelope: {
-      attack: 5.0,
-      decay: 3.0,
-      sustain: 1.0,
-      release: 8.0,
-    },
-  }).connect(filter);
+  // Zen-oriented pentatonic scale
+  const zenScale = ["G2", "Bb2", "C3", "D3", "F3", "G3", "Bb3", "C4", "D4"];
 
-  // Japanese-inspired pentatonic scale (Hirajōshi scale variation)
-  const zenScale = ["D2", "E2", "G2", "A2", "D3", "E3", "G3", "A3", "D4"];
-
-  // Play ambient notes with thoughtful timing
+  // Play ambient notes with more thoughtful timing
   const ambientPart = new Tone.Pattern(
     (time, note) => {
-      // Randomize velocity for more natural feeling (gentler overall)
+      // Gentler velocity for softer notes
       const velocity = 0.05 + Math.random() * 0.15;
       ambient.triggerAttackRelease(note, "4n", time, velocity);
     },
@@ -483,15 +470,7 @@ function setupAudio() {
     "randomWalk"
   );
 
-  // Add occasional drone notes
-  const dronePart = new Tone.Loop(() => {
-    if (Math.random() > 0.6) {
-      // Play root note occasionally
-      drone.triggerAttackRelease(zenScale[0], "8m", undefined, 0.1);
-    }
-  }, "4m");
-
-  // Slow down the tempo significantly for more meditative feeling
+  // Slow down the tempo further for more meditative feeling
   Tone.Transport.bpm.value = 20;
 
   // Note: We don't start Transport until user interaction
@@ -501,16 +480,15 @@ function setupAudio() {
   // Play a gentler note when a new line appears
   window.playLineSound = function () {
     if (!isMuted && audioInitialized) {
-      // Use our zen scale for the line notification
+      // Use pentatonic notes for the line notification as well
       const noteIndex = Math.floor(Math.random() * zenScale.length);
       const randomNote = zenScale[noteIndex];
-      synth.triggerAttackRelease(randomNote, "8n", undefined, 0.15);
+      synth.triggerAttackRelease(randomNote, "8n", undefined, 0.2);
     }
   };
 
-  // Store the parts for later use
+  // Store the ambient part for later use
   window.ambientPart = ambientPart;
-  window.dronePart = dronePart;
 
   // Mark audio as initialized
   audioInitialized = true;
@@ -639,9 +617,6 @@ document.addEventListener("DOMContentLoaded", () => {
           if (window.ambientPart) {
             window.ambientPart.start();
           }
-          if (window.dronePart) {
-            window.dronePart.start();
-          }
 
           // Fade in gradually over 1 second
           masterGain.gain.rampTo(1, 1);
@@ -651,9 +626,6 @@ document.addEventListener("DOMContentLoaded", () => {
           Tone.Transport.start();
           if (window.ambientPart) {
             window.ambientPart.start();
-          }
-          if (window.dronePart) {
-            window.dronePart.start();
           }
         }
       } catch (err) {
