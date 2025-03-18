@@ -494,8 +494,23 @@ function setupAudio() {
   audioInitialized = true;
 }
 
-// Wait for document to be ready
+// Initialize UI controls state
 document.addEventListener("DOMContentLoaded", () => {
+  // Add transition to UI controls for smooth fading
+  document.querySelector(".controls").style.transition = "opacity 1s ease-out";
+  document.querySelector("#fullscreen").style.transition =
+    "opacity 1s ease-out";
+
+  // Start with controls visible
+  document.querySelector(".controls").style.opacity = "1";
+  document.querySelector("#fullscreen").style.opacity = "1";
+
+  // Fade out controls after initial display
+  setTimeout(() => {
+    document.querySelector(".controls").style.opacity = "0";
+    document.querySelector("#fullscreen").style.opacity = "0";
+  }, 3000);
+
   // Update the button text to reflect muted state
   const toggleAudioButton = document.getElementById("toggleAudio");
   if (toggleAudioButton) {
@@ -712,11 +727,30 @@ let targetX = 0;
 let targetY = 0;
 let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
+let lastMouseMoveTime = Date.now();
+let controlsFadeTimeout;
 
 // Add mouse move event listener
 document.addEventListener("mousemove", (event) => {
   mouseX = (event.clientX - windowHalfX) / 200; // Reduced sensitivity (increased divisor)
   mouseY = (event.clientY - windowHalfY) / 200; // Reduced sensitivity (increased divisor)
+
+  // Show UI controls when mouse moves
+  document.querySelector(".controls").style.opacity = "1";
+  document.querySelector("#fullscreen").style.opacity = "1";
+
+  // Reset the last mouse move time
+  lastMouseMoveTime = Date.now();
+
+  // Clear any existing timeout
+  clearTimeout(controlsFadeTimeout);
+
+  // Set timeout to fade controls if mouse stops moving
+  controlsFadeTimeout = setTimeout(() => {
+    // Fade out controls when mouse is inactive for 3 seconds
+    document.querySelector(".controls").style.opacity = "0";
+    document.querySelector("#fullscreen").style.opacity = "0";
+  }, 3000);
 });
 
 // Remove OrbitControls as we're using our custom mouse movement
