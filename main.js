@@ -402,7 +402,7 @@ function setupAudio() {
       type: "sine",
     },
     envelope: {
-      attack: 0.3,
+      attack: 0.2,
       decay: 0.5,
       sustain: 0.4,
       release: 3.0,
