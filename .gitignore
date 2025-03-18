@@ -1,0 +1,4 @@
+.vercel
+bun.lock
+
+node_modules

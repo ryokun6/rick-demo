@@ -1,0 +1,14 @@
+{
+  "name": "rick-demo",
+  "version": "1.0.0",
+  "description": "Vibe Code Demo for Rick",
+  "type": "module",
+  "scripts": {
+    "start": "bun run --hot serve.js",
+    "dev": "bun run --hot serve.js"
+  },
+  "dependencies": {
+    "bun": "latest",
+    "vercel": "^41.4.1"
+  }
+}
