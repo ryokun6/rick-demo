@@ -201,7 +201,7 @@ const textGroup = new THREE.Group();
 scene.add(textGroup);
 textGroup.position.set(0, 0, 0); // Will be dynamically updated to keep newest line centered
 
-let currentQuote = 0;
+let currentQuote = Math.floor(Math.random() * taoQuotes.length);
 let currentLine = 0;
 let displayTimer = 0;
 let lineDisplayTime = 5; // Increased: seconds per line (was 3)
