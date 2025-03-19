@@ -9,7 +9,34 @@ const camera = new THREE.PerspectiveCamera(
 );
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio); // Add pixel ratio for high-DPI displays
 document.body.appendChild(renderer.domElement);
+
+// Add post-processing for bloom effect
+// Create high-resolution render target
+const renderTarget = new THREE.WebGLRenderTarget(
+  window.innerWidth * window.devicePixelRatio,
+  window.innerHeight * window.devicePixelRatio,
+  {
+    minFilter: THREE.LinearFilter,
+    magFilter: THREE.LinearFilter,
+    format: THREE.RGBAFormat,
+  }
+);
+const composer = new THREE.EffectComposer(renderer, renderTarget);
+const renderPass = new THREE.RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+const bloomPass = new THREE.UnrealBloomPass(
+  new THREE.Vector2(
+    window.innerWidth * window.devicePixelRatio,
+    window.innerHeight * window.devicePixelRatio
+  ),
+  0.8, // strength (reduced from 1.5)
+  0.2, // radius (reduced from 0.4)
+  0.85 // threshold (unchanged)
+);
+composer.addPass(bloomPass);
 
 // Add OrbitControls
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -730,6 +757,32 @@ let windowHalfY = window.innerHeight / 2;
 let lastMouseMoveTime = Date.now();
 let controlsFadeTimeout;
 
+// Add mousewheel zoom functionality
+document.addEventListener(
+  "wheel",
+  (event) => {
+    // Prevent default scrolling behavior
+    event.preventDefault();
+
+    // Calculate zoom factor based on wheel delta
+    const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+
+    // Get current camera distance from center
+    const currentDistance = camera.position.length();
+
+    // Calculate new distance with limits
+    const newDistance = Math.max(3, Math.min(20, currentDistance * zoomFactor));
+
+    // Apply new position while maintaining direction
+    const direction = camera.position.clone().normalize();
+    camera.position.copy(direction.multiplyScalar(newDistance));
+
+    // Keep camera looking at center
+    camera.lookAt(scene.position);
+  },
+  { passive: false }
+);
+
 // Add mouse move event listener
 document.addEventListener("mousemove", (event) => {
   mouseX = (event.clientX - windowHalfX) / 200; // Reduced sensitivity (increased divisor)
@@ -966,7 +1019,8 @@ function animate() {
   // Function to center the text group based on current line
   centerTextOnCurrentLine();
 
-  renderer.render(scene, camera);
+  // Render using composer instead of direct renderer
+  composer.render();
 }
 
 // Handle window resize
